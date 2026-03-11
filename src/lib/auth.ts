@@ -5,10 +5,6 @@ import { openAPI } from "better-auth/plugins";
 import { prisma } from "./db.js";
 import { env } from "./env.js";
 
-const isFullstackClubProd =
-  env.NODE_ENV === "production" &&
-  env.WEB_APP_BASE_URL.includes("fullstackclub.com.br");
-
 export const auth = betterAuth({
   baseURL: env.API_BASE_URL,
   trustedOrigins: [env.WEB_APP_BASE_URL],
@@ -23,10 +19,4 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   plugins: [openAPI()],
-  advanced: {
-    crossSubDomainCookies: {
-      enabled: isFullstackClubProd,
-      domain: isFullstackClubProd ? ".fullstackclub.com.br" : undefined,
-    },
-  },
 });
