@@ -36,7 +36,7 @@ Durante o desenvolvimento, enfrentei e aprendi com desafios como padronização 
 
 ## Motivação e Visão
 
-O objetivo principal deste projeto foi criar uma API robusta, escalável e segura, pronta para ser consumida por aplicações front-end e mobile. 
+O objetivo principal deste projeto foi criar uma API robusta, escalável e segura, pronta para ser consumida por aplicações front-end e mobile.
 Além de consolidar conhecimentos do Bootcamp, busquei aplicar conceitos práticos, validar aprendizados e criar uma referência técnica que, além de atender a casos reais, também pudesse servir como ponto de partida para estudos futuros e projetos profissionais.
 
 ---
@@ -118,14 +118,14 @@ Utiliza Better-Auth com sessões persistidas no banco (Prisma). O fluxo:
 
 ## Principais Endpoints
 
-| Método | Rota                 | Descrição                        |
-|--------|----------------------|----------------------------------|
-| POST   | `/users/register`    | Cadastro de usuário              |
-| POST   | `/users/login`       | Login/autenticação               |
-| GET    | `/workout-plans`     | Listar planos de treino          |
-| POST   | `/workout-plans`     | Criar novo plano                 |
-| GET    | `/sessions/:id`      | Detalhar sessão de treino        |
-| POST   | `/exercises`         | Registrar exercício              |
+| Método | Rota              | Descrição                 |
+| ------ | ----------------- | ------------------------- |
+| POST   | `/users/register` | Cadastro de usuário       |
+| POST   | `/users/login`    | Login/autenticação        |
+| GET    | `/workout-plans`  | Listar planos de treino   |
+| POST   | `/workout-plans`  | Criar novo plano          |
+| GET    | `/sessions/:id`   | Detalhar sessão de treino |
+| POST   | `/exercises`      | Registrar exercício       |
 
 Todos os endpoints com validação rigorosa via Zod e autenticação/autorizações conforme necessidade.
 
@@ -158,7 +158,7 @@ Para rodar o sistema completo, clone ambos os repositórios e siga as instruçõ
    ```
 
 3. Configure o arquivo `.env`
-   - Copie o `.env.example` para `.env`  
+   - Copie o `.env.example` para `.env`
    - Preencha dados do banco (Postgres), chave de sessão, etc.
 
 4. Rode as migrations
