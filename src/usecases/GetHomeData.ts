@@ -67,17 +67,19 @@ export class GetHomeData {
     const weekStart = currentDate.day(0).startOf("day");
     const weekEnd = currentDate.day(6).endOf("day");
 
-    const weekSessions = await prisma.workoutSession.findMany({
-      where: {
-        workoutDay: {
-          workoutPlanId: workoutPlan?.id,
-        },
-        startedAt: {
-          gte: weekStart.toDate(),
-          lte: weekEnd.toDate(),
-        },
-      },
-    });
+    const weekSessions = workoutPlan
+      ? await prisma.workoutSession.findMany({
+          where: {
+            workoutDay: {
+              workoutPlanId: workoutPlan.id,
+            },
+            startedAt: {
+              gte: weekStart.toDate(),
+              lte: weekEnd.toDate(),
+            },
+          },
+        })
+      : [];
 
     const consistencyByDay: Record<
       string,
