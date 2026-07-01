@@ -1,9 +1,15 @@
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+
 import {
   NotFoundError,
   SessionAlreadyStartedError,
   WorkoutPlanNotActiveError,
 } from "../errors/index.js";
+import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/db.js";
+
+dayjs.extend(utc);
 
 interface InputDto {
   userId: string;
@@ -41,25 +47,48 @@ export class StartWorkoutSession {
       throw new NotFoundError("Workout day not found");
     }
 
-    const existingSession = await prisma.workoutSession.findFirst({
-      where: { workoutDayId: dto.workoutDayId },
-    });
+    const todayStart = dayjs.utc().startOf("day").toDate();
+    const todayEnd = dayjs.utc().endOf("day").toDate();
 
-    if (existingSession) {
-      throw new SessionAlreadyStartedError(
-        "A session has already been started for this day",
+    try {
+      const session = await prisma.$transaction(
+        async (tx) => {
+          const existingSession = await tx.workoutSession.findFirst({
+            where: {
+              workoutDayId: dto.workoutDayId,
+              startedAt: { gte: todayStart, lte: todayEnd },
+            },
+          });
+
+          if (existingSession) {
+            throw new SessionAlreadyStartedError(
+              "A session has already been started for this day",
+            );
+          }
+
+          return tx.workoutSession.create({
+            data: {
+              workoutDayId: dto.workoutDayId,
+              startedAt: new Date(),
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
+
+      return {
+        userWorkoutSessionId: session.id,
+      };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2034"
+      ) {
+        throw new SessionAlreadyStartedError(
+          "A session has already been started for this day",
+        );
+      }
+      throw error;
     }
-
-    const session = await prisma.workoutSession.create({
-      data: {
-        workoutDayId: dto.workoutDayId,
-        startedAt: new Date(),
-      },
-    });
-
-    return {
-      userWorkoutSessionId: session.id,
-    };
   }
 }
