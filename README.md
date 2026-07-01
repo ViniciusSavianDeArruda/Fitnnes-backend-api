@@ -3,9 +3,8 @@
 ![Node.js](https://img.shields.io/badge/node.js-24-green)
 ![TypeScript](https://img.shields.io/badge/typescript-5-blue)
 ![Fastify](https://img.shields.io/badge/fastify-5-black)
-![License](https://img.shields.io/badge/license-MIT-green)
 
-API backend para gestão de treinos desenvolvida durante o Bootcamp Full Stack Club. Fornece endpoints para autenticação, gerenciamento de planos de treino, registro de exercícios e histórico de sessões. Projetada para ser modular, testável e pronta para deploy via Docker.
+API backend para gestão de treinos desenvolvida durante o Bootcamp Full Stack Club. Fornece endpoints para autenticação, gerenciamento de planos de treino, registro de exercícios, histórico de sessões e um assistente de IA para montagem de treinos. Projetada para ser modular, testável e pronta para deploy via Docker.
 
 **Status:** Em desenvolvimento
 
@@ -23,16 +22,17 @@ API backend para gestão de treinos desenvolvida durante o Bootcamp Full Stack C
 - [Execução com Docker](#execução-com-docker)
 - [Contribuição](#contribuição)
 - [Roadmap](#roadmap)
-- [Licença](#licença)
 
 ---
 
 ## Features
 
-- Autenticação com sessões (Better-Auth)
-- Gerenciamento de planos de treino
-- Registro e tracking de exercícios
-- Histórico e sessões de treino
+- Autenticação com sessões (Better-Auth) via Google OAuth
+- Gerenciamento de planos de treino, dias e exercícios
+- Registro e tracking de sessões de treino
+- Estatísticas de consistência do usuário
+- Assistente de IA (chat) que cria planos de treino personalizados via tool-calling
+- Documentação da API via Swagger/OpenAPI e Scalar UI
 - Validação de entrada com Zod
 - Arquitetura modular e testável
 - Suporte a execução via Docker
@@ -90,18 +90,31 @@ Fitnnes-backend-api/
 
 ## Instalação e execução
 
-Recomendo `pnpm` (projetado para usar `pnpm` conforme `packageManager`):
+Requer **Node.js 24.x** e **pnpm 10.30.0** (ambos obrigatórios via `engine-strict`, conforme `package.json`).
 
 ```bash
 git clone https://github.com/ViniciusSavianDeArruda/Fitnnes-backend-api.git
 cd Fitnnes-backend-api
 pnpm install
-pnpm run dev
+
+# sobe o Postgres localmente via Docker
+docker compose up -d
+
+# configure o .env (veja seção abaixo) antes de continuar
+cp .env.example .env
+
+# aplica as migrations no banco
+pnpm exec prisma migrate dev
+
+# inicia o servidor com hot-reload
+pnpm dev
 ```
 
-Script de desenvolvimento:
+O servidor sobe em `http://localhost:8081` (porta padrão). Docs interativas em `/docs`, spec OpenAPI em `/swagger.json`.
 
-- `pnpm run dev` — inicia o servidor com `tsx --watch src/index.ts`
+Scripts disponíveis:
+
+- `pnpm dev` — inicia o servidor com `tsx --watch src/index.ts`
 - `pnpm run build` — gera o Prisma client e compila o TypeScript
 
 ---
@@ -112,13 +125,23 @@ Copie o arquivo de exemplo e preencha com suas credenciais:
 
 ```bash
 cp .env.example .env
-# definir DATABASE_URL, SESSION_SECRET, etc.
 ```
 
-Variáveis importantes:
+Variáveis (definidas e validadas em `src/lib/env.ts`):
 
-- `DATABASE_URL` — conexão Postgres
-- `SESSION_SECRET` — chave para sessões
+| Variável | Obrigatória | Descrição |
+| --- | --- | --- |
+| `PORT` | Não (default: `8081`) | Porta do servidor. **Precisa bater com o redirect URI cadastrado no Google Cloud Console** |
+| `DATABASE_URL` | Sim | Conexão Postgres (`postgresql://...`) |
+| `BETTER_AUTH_SECRET` | Sim | Chave secreta para sessões do BetterAuth |
+| `API_BASE_URL` | Não (default: `http://localhost:8081`) | URL pública da própria API, usada pelo BetterAuth |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Sim | Credenciais OAuth do [Google Cloud Console](https://console.cloud.google.com/) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Sim | Chave do Gemini ([AI Studio](https://aistudio.google.com/apikey)) — exigida pelo schema de env, mas não usada pelas rotas de IA atualmente (elas usam `OPENAI_API_KEY`) |
+| `OPENAI_API_KEY` | Não | Chave da OpenAI — usada pelo modelo `gpt-4o-mini` no chat de IA (`src/routes/ai.ts`) |
+| `WEB_APP_BASE_URL` | Sim | URL do frontend, usada para CORS e `trustedOrigins` do BetterAuth |
+| `NODE_ENV` | Não (default: `development`) | `development` \| `production` \| `test` |
+
+> No Google Cloud Console, o redirect URI autorizado precisa ser exatamente `{API_BASE_URL}/api/auth/callback/google`.
 
 ---
 
@@ -126,30 +149,30 @@ Variáveis importantes:
 
 | Método | Rota | Descrição |
 | ------ | ---- | --------- |
-| POST | `/users/register` | Cadastro de usuário |
-| POST | `/users/login` | Login / geração de sessão |
-| GET  | `/workout-plans` | Listar planos de treino |
-| POST | `/workout-plans` | Criar novo plano |
-| GET  | `/sessions/:id` | Detalhar sessão de treino |
-| POST | `/exercises` | Registrar exercício |
+| GET | `/home/:date` | Dados da home para uma data |
+| GET | `/me` | Dados de treino do usuário autenticado |
+| PUT | `/me` | Atualiza dados de treino do usuário |
+| GET | `/stats` | Estatísticas de consistência do usuário |
+| GET | `/workout-plans` | Lista os planos de treino |
+| POST | `/workout-plans` | Cria um novo plano de treino |
+| GET | `/workout-plans/:workoutPlanId` | Detalha um plano de treino |
+| GET | `/workout-plans/:workoutPlanId/days/:workoutDayId` | Detalha um dia de treino |
+| POST | `/workout-plans/:workoutPlanId/days/:workoutDayId/sessions` | Inicia uma sessão de treino |
+| PATCH | `/workout-plans/:workoutPlanId/days/:workoutDayId/sessions/:sessionId` | Atualiza uma sessão de treino |
+| POST | `/ai` | Chat com o personal trainer de IA (streaming) |
+| GET/POST | `/api/auth/*` | Rotas do BetterAuth (login, sessão, callback OAuth) |
 
-Todos os endpoints usam validação via Zod e aplicam autenticação quando necessário.
+Todos os endpoints usam validação via Zod (`fastify-type-provider-zod`) e aplicam autenticação via `auth.api.getSession()` quando necessário. Lista completa e testável em `/docs`.
 
 ---
 
 ## Execução com Docker
 
-Build e run:
+O `docker-compose.yml` sobe **apenas o Postgres** (usado no desenvolvimento local, veja [Instalação e execução](#instalação-e-execução)). O `Dockerfile` builda a API em si, para deploy:
 
 ```bash
 docker build -t fitnnes-backend-api .
-docker run -p 3000:3000 --env-file .env fitnnes-backend-api
-```
-
-Ou via `docker-compose` quando disponível:
-
-```bash
-docker compose up --build
+docker run -p 8081:8081 --env-file .env fitnnes-backend-api
 ```
 
 ---
@@ -158,11 +181,10 @@ docker compose up --build
 
 1. Fork e crie uma branch: `git checkout -b feat/minha-feature`
 2. Mantenha commits claros (Conventional Commits)
-3. Rode lint/testes antes de PR:
+3. Rode o lint antes de abrir o PR (ainda não há testes automatizados configurados):
 
 ```bash
 pnpm exec eslint .
-pnpm test
 ```
 
 4. Abra um PR descrevendo mudanças e contexto.
@@ -175,12 +197,6 @@ pnpm test
 - Implementar autenticação multifator
 - Adicionar integração com dispositivos vestíveis
 - Melhorar observabilidade e logging
-
----
-
-## Licença
-
-MIT — veja o arquivo `LICENSE`.
 
 ---
 
