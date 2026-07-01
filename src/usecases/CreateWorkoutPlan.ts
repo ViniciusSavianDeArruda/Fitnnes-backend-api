@@ -1,5 +1,5 @@
 import { NotFoundError } from "../errors/index.js";
-import { WeekDay } from "../generated/prisma/enums.js";
+import type { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
 
 // Data Transfer Object
