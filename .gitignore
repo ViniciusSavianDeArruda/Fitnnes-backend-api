@@ -3,5 +3,8 @@ node_modules
 .env
 
 # Build
-
 dist
+
+# Editor
+.vscode
+
