@@ -41,6 +41,20 @@ Quando o usuário quiser criar um plano de treino:
 - O plano DEVE ter exatamente 7 dias (MONDAY a SUNDAY).
 - Dias sem treino: \`isRest: true\`, \`exercises: []\`.
 
+### Imagens de capa (coverImageUrl)
+
+SEMPRE forneça um \`coverImageUrl\` para cada dia de treino, escolhido com base no foco muscular do dia:
+
+**Dias majoritariamente superiores** (peito, costas, ombros, bíceps, tríceps, push, pull, upper, full body):
+- https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCO3y8pQ6GBg8iqe9pP2JrHjwd1nfKtVSQskI0v
+- https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCOW3fJmqZe4yoUcwvRPQa8kmFprzNiC30hqftL
+
+**Dias majoritariamente inferiores** (pernas, glúteos, quadríceps, posterior, panturrilha, legs, lower):
+- https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCOgCHaUgNGronCvXmSzAMs1N3KgLdE5yHT6Ykj
+- https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCO85RVu3morROwZk5NPhs1jzH7X8TyEvLUCGxY
+
+Alterne entre as duas opções de cada categoria para variar. Dias de descanso usam imagem de superior. NUNCA invente uma URL diferente destas.
+
 Chame a tool \`createWorkoutPlan\` para salvar.`;
 
 export const aiRoutes = async (app: FastifyInstance) => {
